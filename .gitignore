@@ -1,5 +1,4 @@
 x64/
 Dijkstrah's Algorithm Visualization/x64/
 .vs/
-*.vcxproj
-/Dijkstrah's Algorithm Visualization/Dijkstrah's Algorithm Visualization.vcxproj
+/Dijkstrah's Algorithm Visualization/*.vcxproj

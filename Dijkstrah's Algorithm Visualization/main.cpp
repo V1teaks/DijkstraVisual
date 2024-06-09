@@ -61,7 +61,12 @@ static void generatePointsByHand(vector<pair<short, short>>& points) {
 	points.push_back(pair<short, short>(110 * k, 110 * k));
 }
 
-static void makeLink(vector<pair<short, short>>& points, vector<vector<pair<int, int>>>& graph, int start, int end) {
+static void makeLink
+(
+	vector<pair<short, short>>& points, 
+	vector<vector<pair<int, int>>>& graph, 
+	int start, int end
+) {
 	int dx = (points[start].first - points[end].first);
 	int dy = (points[start].second - points[end].second);
 	int dist = getIntSqrt(dx * dx + dy * dy);
@@ -69,7 +74,11 @@ static void makeLink(vector<pair<short, short>>& points, vector<vector<pair<int,
 	graph[end].push_back(pair<int, int>(start, dist));
 }
 
-static void generateGraph(vector<pair<short, short>>& points, vector<vector<pair<int, int>>>& graph) {
+static void generateGraph
+(
+	vector<pair<short, short>>& points,
+	vector<vector<pair<int, int>>>& graph
+) {
 
 	int n = points.size();
 	int maxConnections = 1;
@@ -85,7 +94,11 @@ static void generateGraph(vector<pair<short, short>>& points, vector<vector<pair
 	}
 }
 
-static void generateGraphByHand(vector<pair<short, short>>& points, vector<vector<pair<int, int>>>& graph) {
+static void generateGraphByHand
+(
+	vector<pair<short, short>>& points,
+	vector<vector<pair<int, int>>>& graph
+) {
 	makeLink(points, graph, 0, 3);
 	makeLink(points, graph, 0, 1);
 	makeLink(points, graph, 1, 0);
@@ -114,7 +127,12 @@ static void generateGraphByHand(vector<pair<short, short>>& points, vector<vecto
 	makeLink(points, graph, 10, 11);
 }
 
-static vector<int> dijkstra(vector<vector<pair<int, int>>>& graph, map<short, short>& fromTo, int start) {
+static vector<int> dijkstra
+(
+	vector<vector<pair<int, int>>>& graph, 
+	map<short, short>& fromTo, 
+	int start
+) {
 
 	vector<int> distances(graph.size(), INT_MAX);
 	vector<bool> used(graph.size(), false);
@@ -148,18 +166,25 @@ static vector<int> dijkstra(vector<vector<pair<int, int>>>& graph, map<short, sh
 	return distances;
 }
 
-static void renderPoints(vector<pair<short, short>>& points, vector<int>& distances, sf::RenderWindow& window, sf::Text text, int start, int end) {
+static void renderPoints
+(
+	vector<pair<short, short>>& points, 
+	vector<int>& distances, 
+	sf::RenderWindow& window, 
+	sf::Text text, 
+	int start, int end
+) {
 	sf::CircleShape shape(R);
 	shape.setFillColor(sf::Color::Green);
 	for (int i = 0; i < points.size(); ++i) {
 		auto& point = points[i];
 		shape.setPosition(sf::Vector2f(point.first, point.second));
 
-		text.setString(to_string(distances[i]));
-		text.setPosition(sf::Vector2f(points[i].first, points[i].second - R - 5));
+		text.setString(to_string(i));
+		text.setPosition(sf::Vector2f(points[i].first + R / 2, points[i].second + R + 20));
 
 		window.draw(shape);
-		//window.draw(text);
+		window.draw(text);
 	}
 	shape.setPosition(sf::Vector2f(points[start].first, points[start].second));
 	shape.setFillColor(sf::Color::Yellow);
@@ -180,7 +205,14 @@ static void renderPoints(vector<pair<short, short>>& points, vector<int>& distan
 	window.draw(text);
 }
 
-static void renderLines(vector<vector<pair<int, int>>>& graph, vector<pair<short, short>>& points, map<short, short>& fromTo, int end, sf::RenderWindow& window, sf::Text& text) {
+static void renderLines
+(
+	vector<vector<pair<int, int>>>& graph, 
+	vector<pair<short, short>>& points, 
+	map<short, short>& fromTo, int end, 
+	sf::RenderWindow& window, 
+	sf::Text& text
+) {
 	int from = end;
 	while (fromTo.count(from)) {
 		int to = fromTo[from];
@@ -207,7 +239,13 @@ static void renderLines(vector<vector<pair<int, int>>>& graph, vector<pair<short
 	}
 }
 
-static void renderAllLines(vector<vector<pair<int, int>>>& graph, vector<pair<short, short>>& points, sf::RenderWindow& window, sf::Text& text) {
+static void renderAllLines
+(
+	vector<vector<pair<int, int>>>& graph,
+	vector<pair<short, short>>& points,
+	sf::RenderWindow& window,
+	sf::Text& text
+) {
 	for (int from = 0; from < points.size(); ++from) {
 		for (auto& node : graph[from]) {
 
@@ -236,7 +274,14 @@ static void renderAllLines(vector<vector<pair<int, int>>>& graph, vector<pair<sh
 	}
 }
 
-static void renderVisualization(vector<vector<pair<int, int>>>& graph, vector<pair<short, short>>& points, map<short, short>& fromTo, vector<int>& distances, int start, int end) {
+static void renderVisualization 
+(
+	vector<vector<pair<int, int>>>& graph, 
+	vector<pair<short, short>>& points, 
+	map<short, short>& fromTo, 
+	vector<int>& distances, 
+	int start, int end
+) {
 
 	sf::Font font;
 	if (!font.loadFromFile("Roboto-Regular.ttf")) {
@@ -247,33 +292,93 @@ static void renderVisualization(vector<vector<pair<int, int>>>& graph, vector<pa
 	text.setCharacterSize(25);
 	text.setOutlineColor(sf::Color::Black);
 
-	sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Dijktra's Algorithm Visualization");
+	sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Dijktra's Algorithm Visualization");
+	sf::View view(sf::FloatRect(0, 0, 2560, 1600));
 
-	renderPoints(points, distances, window, text, start, end);
-	renderAllLines(graph, points, window, text);
-	renderLines(graph, points, fromTo, end, window, text);
-	window.display();
-	while (window.isOpen()) {
+	window.setView(view);
+
+	sf::Vector2f anchor;
+	bool isPressed = false;
+
+	while (window.isOpen()) 
+	{
 		sf::Event event;
-		while (window.pollEvent(event)) {
+
+		while (window.pollEvent(event)) 
+		{
+			if (event.type == sf::Event::MouseWheelScrolled)
+			{
+				float powerOfZoom = 0.05f;
+				view.zoom(1.0f - powerOfZoom * event.mouseWheelScroll.delta);
+			}
+			if (event.type == sf::Event::MouseButtonPressed)
+			{
+				isPressed = true;
+				anchor.x = event.mouseButton.x;
+				anchor.y = event.mouseButton.y;
+			}
+			if (event.type == sf::Event::MouseMoved and isPressed)
+			{
+				int x, y;
+				x = event.mouseMove.x;
+				y = event.mouseMove.y;
+
+				view.move(sf::Vector2f(anchor.x - x, anchor.y - y));
+
+				anchor.x = x;
+				anchor.y = y;
+			}
+			if (event.type == sf::Event::MouseButtonReleased)
+			{
+				isPressed = false;
+			}
 			if (event.type == sf::Event::Closed)
 				window.close();
 		}
+		window.clear();
+		renderPoints(points, distances, window, text, start, end);
+		renderAllLines(graph, points, window, text);
+		renderLines(graph, points, fromTo, end, window, text);
+		window.setView(view);
+		window.display();
 	}
 }
 
 int main() {
 
-	//int n;
-	//cout << "Enter count of points: "; cin >> n; cout << endl;
+	string s = "";
+	cout << "Hello! It's the Dijkstrah's Algorithm Visualization Program!)" << endl;
+	cout << "Do you want to set points from file or by random?" << endl;
+	cout << "print R to set by random and F to set from File" << endl;
+	while (s != "R" and s != "F" and s != "r" and s != "f") 
+	{
+		cout << "Proceed (R/f): "; 
+		cin >> s;
+	}
+
+	bool isRandom = (s == "R" or s == "r") ? true : false;
 
 	vector<pair<short, short>> points;
-	//generatePoints(n, points);
-	generatePointsByHand(points);
-
+	if (isRandom) 
+	{
+		int n;
+		cout << "Enter count of points: "; cin >> n; cout << endl;
+		generatePoints(n, points);
+	}
+	else 
+	{
+		generatePointsByHand(points);
+	}
+	
 	vector<vector<pair<int, int>>> graph(points.size(), vector<pair<int, int>>(0));
-	//generateGraph(points, graph);
-	generateGraphByHand(points, graph);
+	if (isRandom) 
+	{
+		generateGraph(points, graph);
+	}
+	else 
+	{
+		generateGraphByHand(points, graph);
+	}
 
 	int start = 0;
 	int end = points.size() - 1;
