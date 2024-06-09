@@ -7,8 +7,8 @@
 
 using namespace std;
 
-const short WIDTH = 2560;
-const short HEIGHT = 1520;
+const short WIDTH = 2400;
+const short HEIGHT = 1500;
 const short R = 15;
 
 static int getIntSqrt(int x) {
@@ -292,12 +292,14 @@ static void renderVisualization
 	text.setCharacterSize(25);
 	text.setOutlineColor(sf::Color::Black);
 
-	sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Dijktra's Algorithm Visualization");
-	sf::View view(sf::FloatRect(0, 0, 2560, 1600));
+	sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Dijktra's Algorithm Visualization");
+	sf::View view(sf::FloatRect(0, 0, WIDTH, HEIGHT));
 
 	window.setView(view);
 
 	sf::Vector2f anchor;
+	sf::Vector2f viewSize = view.getSize();
+	float powerOfZoom = 0.05f;
 	bool isPressed = false;
 
 	while (window.isOpen()) 
@@ -308,8 +310,8 @@ static void renderVisualization
 		{
 			if (event.type == sf::Event::MouseWheelScrolled)
 			{
-				float powerOfZoom = 0.05f;
 				view.zoom(1.0f - powerOfZoom * event.mouseWheelScroll.delta);
+				viewSize = view.getSize();
 			}
 			if (event.type == sf::Event::MouseButtonPressed)
 			{
@@ -320,10 +322,17 @@ static void renderVisualization
 			if (event.type == sf::Event::MouseMoved and isPressed)
 			{
 				int x, y;
+				float dx, dy, scale;
+
 				x = event.mouseMove.x;
 				y = event.mouseMove.y;
+				
+				scale = viewSize.x / WIDTH;
+				dx = (anchor.x - x) * scale;
+				dy = (anchor.y - y) * scale;
 
-				view.move(sf::Vector2f(anchor.x - x, anchor.y - y));
+				view.move(sf::Vector2f(dx, dy));
+				cout << x << " " << y << endl;
 
 				anchor.x = x;
 				anchor.y = y;
@@ -344,33 +353,38 @@ static void renderVisualization
 	}
 }
 
-int main() {
-
+int main() 
+{
 	string s = "";
+	bool isRandom;
+
 	cout << "Hello! It's the Dijkstrah's Algorithm Visualization Program!)" << endl;
 	cout << "Do you want to set points from file or by random?" << endl;
 	cout << "print R to set by random and F to set from File" << endl;
+
 	while (s != "R" and s != "F" and s != "r" and s != "f") 
 	{
 		cout << "Proceed (R/f): "; 
 		cin >> s;
 	}
 
-	bool isRandom = (s == "R" or s == "r") ? true : false;
+	isRandom = (s == "R" or s == "r") ? true : false;
 
 	vector<pair<short, short>> points;
-	if (isRandom) 
+
+	if (isRandom)
 	{
 		int n;
 		cout << "Enter count of points: "; cin >> n; cout << endl;
 		generatePoints(n, points);
 	}
-	else 
+	else
 	{
 		generatePointsByHand(points);
 	}
 	
 	vector<vector<pair<int, int>>> graph(points.size(), vector<pair<int, int>>(0));
+
 	if (isRandom) 
 	{
 		generateGraph(points, graph);
@@ -384,6 +398,7 @@ int main() {
 	int end = points.size() - 1;
 	map<short, short> fromTo;
 	vector<int> distances = dijkstra(graph, fromTo, start);
+
 	renderVisualization(graph, points, fromTo, distances, start, end);
 
 	return 0;
