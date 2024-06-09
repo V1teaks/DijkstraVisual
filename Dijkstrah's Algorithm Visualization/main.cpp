@@ -230,11 +230,6 @@ static void renderLine
 	int dist = getIntSqrt(dx * dx + dy * dy);
 
 	text.setPosition(sf::Vector2f(midX, midY));
-	text.setFillColor(sf::Color::White);
-	if (color != sf::Color::Red)
-	{
-		text.setFillColor(color);
-	}
 	text.setString(to_string(dist));
 
 	window.draw(line, 2, sf::Lines);
@@ -283,6 +278,7 @@ static void renderAllLines
 			sf::Color color = sf::Color::White;
 			
 			color.a = 50;
+			text.setFillColor(color);
 			renderLine(window, text, color, points, from, to);
 		}
 	}
@@ -443,6 +439,7 @@ static void renderVisualization
 			window.draw(shape);
 		}
 		renderAllLines(graph, points, window, text);
+		text.setFillColor(sf::Color::White);
 		renderRedLines(graph, points, fromTo, start, end, window, text);
 		window.setView(view);
 		window.display();
