@@ -231,6 +231,10 @@ static void renderLine
 
 	text.setPosition(sf::Vector2f(midX, midY));
 	text.setFillColor(sf::Color::White);
+	if (color != sf::Color::Red)
+	{
+		text.setFillColor(color);
+	}
 	text.setString(to_string(dist));
 
 	window.draw(line, 2, sf::Lines);
@@ -338,10 +342,13 @@ static void renderVisualization
 				{
 					firstNode = node;
 				}
-				else
+				else if (firstNode != node)
 				{
 					makeLink(points, graph, firstNode, node);
 					distances = dijkstra(graph, fromTo, start);
+					firstNode = -1;
+				}
+				else if (firstNode == node) {
 					firstNode = -1;
 				}
 			}
@@ -427,6 +434,14 @@ static void renderVisualization
 		}
 		window.clear();
 		renderPoints(points, distances, window, text, start, end);
+		if (firstNode != -1)
+		{
+			sf::CircleShape shape(R);
+			shape.setFillColor(sf::Color::Magenta);
+			auto& point = points[firstNode];
+			shape.setPosition(sf::Vector2f(point.x, point.y));
+			window.draw(shape);
+		}
 		renderAllLines(graph, points, window, text);
 		renderRedLines(graph, points, fromTo, start, end, window, text);
 		window.setView(view);
