@@ -10,6 +10,7 @@ using namespace std;
 const short WIDTH = 2400;
 const short HEIGHT = 1500;
 const short R = 15;
+const short FONTSIZE = 25;
 
 static int getIntSqrt(int x) 
 {
@@ -24,12 +25,12 @@ static int getIntSqrt(int x)
 	return l;
 }
 
-static int checkCollision(short x, short y, vector<sf::Vector2i>& points) 
+static int checkCollision(int x, int y, vector<sf::Vector2i>& points) 
 {
 	for (int i = 0; i < points.size(); ++i) 
 	{
-		short dx = points[i].x - x;
-		short dy = points[i].y - y;
+		int dx = points[i].x - x;
+		int dy = points[i].y - y;
 		int distSquare = dx * dx + dy * dy;
 		if (distSquare <= 9 * R * R) {
 			return i;
@@ -103,7 +104,7 @@ static void readGraphFromFile
 static vector<int> dijkstra
 (
 	vector<vector<pair<int, int>>>& graph, 
-	map<short, short>& fromTo, 
+	vector<int>& fromTo, 
 	int start
 ) 
 {
@@ -113,23 +114,28 @@ static vector<int> dijkstra
 	int min_dist = 0;
 
 	distances[min_node] = 0;
-	while (min_dist < INT_MAX) {
-
+	while (min_dist < INT_MAX) 
+	{
 		int i = min_node;
 		used[i] = true;
-		for (auto& node_data : graph[i]) {
+
+		for (auto& node_data : graph[i]) 
+		{
 			int neighbour = node_data.first;
 			int weight = node_data.second;
 			int distance = min_dist + weight;
-			if (distance < distances[neighbour]) {
+			if (distance < distances[neighbour]) 
+			{
 				distances[neighbour] = distance;
 				fromTo[neighbour] = i;
 			}
 		}
 
 		min_dist = INT_MAX;
-		for (int i = 0; i < graph.size(); ++i) {
-			if (!used[i] && distances[i] < min_dist) {
+		for (int i = 0; i < graph.size(); ++i) 
+		{
+			if (!used[i] && distances[i] < min_dist) 
+			{
 				min_dist = distances[i];
 				min_node = i;
 			}
@@ -213,14 +219,15 @@ static void renderRedLines
 (
 	vector<vector<pair<int, int>>>& graph, 
 	vector<sf::Vector2i>& points, 
-	map<short, short>& fromTo,
+	vector<int>& fromTo,
+	int start,
 	int end, 
 	sf::RenderWindow& window, 
 	sf::Text& text
 ) 
 {
 	int from = end;
-	while (fromTo.count(from)) 
+	while (from != start)
 	{
 		int to = fromTo[from];
 		sf::Color color = sf::Color::Red;
@@ -255,9 +262,10 @@ static void renderVisualization
 (
 	vector<vector<pair<int, int>>>& graph, 
 	vector<sf::Vector2i>& points, 
-	map<short, short>& fromTo, 
+	vector<int>& fromTo, 
 	vector<int>& distances, 
-	int start, int end
+	int start, 
+	int end
 ) {
 
 	sf::Font font;
@@ -266,11 +274,12 @@ static void renderVisualization
 	}
 	sf::Text text;
 	text.setFont(font);
-	text.setCharacterSize(25);
+	text.setCharacterSize(FONTSIZE);
 	text.setOutlineColor(sf::Color::Black);
 
 	sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Dijktra's Algorithm Visualization");
 	sf::View view(sf::FloatRect(0, 0, WIDTH, HEIGHT));
+	sf::Vector2f mainAnchor(0, 0);
 	sf::Vector2f anchor;
 	sf::Vector2f viewSize = view.getSize();
 	float powerOfZoom = 0.05f;
@@ -287,6 +296,28 @@ static void renderVisualization
 				view.zoom(1.0f - powerOfZoom * event.mouseWheelScroll.delta);
 				viewSize = view.getSize();
 			}
+
+			if (event.type == sf::Event::MouseButtonPressed
+				and checkCollision(event.mouseButton.x - mainAnchor.x, event.mouseButton.y - mainAnchor.y, points) != -1
+				and (event.mouseButton.button == sf::Mouse::Left
+					or event.mouseButton.button == sf::Mouse::Right)
+				)
+			{
+				int x, y;
+				x = event.mouseButton.x - mainAnchor.x;
+				y = event.mouseButton.y - mainAnchor.y;
+
+				if (event.mouseButton.button == sf::Mouse::Left)
+				{
+					start = checkCollision(x, y, points);
+					distances = dijkstra(graph, fromTo, start);
+				}
+				else
+				{
+					end = checkCollision(x, y, points);
+				}
+			}
+
 			if (event.type == sf::Event::MouseButtonPressed
 				and event.mouseButton.button == sf::Mouse::Middle)
 			{
@@ -294,6 +325,7 @@ static void renderVisualization
 				anchor.x = event.mouseButton.x;
 				anchor.y = event.mouseButton.y;
 			}
+
 			if (event.type == sf::Event::MouseMoved and isPressed)
 			{
 				float x, y;
@@ -307,15 +339,19 @@ static void renderVisualization
 				dy = (anchor.y - y) * scale;
 
 				view.move(sf::Vector2f(dx, dy));
+				mainAnchor.x -= dx;
+				mainAnchor.y -= dy;
 
 				anchor.x = x;
 				anchor.y = y;
 			}
+
 			if (event.type == sf::Event::MouseButtonReleased
 				and event.mouseButton.button == sf::Mouse::Middle)
 			{
 				isPressed = false;
 			}
+
 			if (event.type == sf::Event::Closed)
 			{
 				window.close();
@@ -324,7 +360,7 @@ static void renderVisualization
 		window.clear();
 		renderPoints(points, distances, window, text, start, end);
 		renderAllLines(graph, points, window, text);
-		renderRedLines(graph, points, fromTo, end, window, text);
+		renderRedLines(graph, points, fromTo, start, end, window, text);
 		window.setView(view);
 		window.display();
 	}
@@ -373,7 +409,7 @@ int main()
 
 	int start = 0;
 	int end = points.size() - 1;
-	map<short, short> fromTo;
+	vector<int> fromTo(points.size());
 	vector<int> distances = dijkstra(graph, fromTo, start);
 
 	renderVisualization(graph, points, fromTo, distances, start, end);
