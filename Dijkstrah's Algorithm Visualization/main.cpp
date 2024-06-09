@@ -2,8 +2,8 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <vector>
-#include <map>
 #include <random>
+#include <fstream>
 
 using namespace std;
 
@@ -55,14 +55,21 @@ static void generatePoints(int n, vector<sf::Vector2i>& points)
 
 static void readPointsFromFile(vector<sf::Vector2i>& points) 
 {
-	
+	ifstream infile("points-data.txt");
+	int x, y;
+	while (infile >> x >> y)
+	{
+		points.push_back(sf::Vector2i(x, y));
+	}
+	infile.close();
 }
 
 static void makeLink
 (
 	vector<sf::Vector2i>& points, 
 	vector<vector<pair<int, int>>>& graph, 
-	int start, int end
+	int start, 
+	int end
 ) 
 {
 	int dx = (points[start].x - points[end].x);
@@ -97,8 +104,15 @@ static void readGraphFromFile
 (
 	vector<sf::Vector2i>& points,
 	vector<vector<pair<int, int>>>& graph
-) {
-	
+) 
+{
+	ifstream infile("graph-data.txt");
+	int start, end;
+	while (infile >> start >> end)
+	{
+		makeLink(points, graph, start, end);
+	}
+	infile.close();
 }
 
 static vector<int> dijkstra
@@ -113,7 +127,9 @@ static vector<int> dijkstra
 	int min_node = start;
 	int min_dist = 0;
 
+	fromTo = vector<int>(graph.size(), -1);
 	distances[min_node] = 0;
+
 	while (min_dist < INT_MAX) 
 	{
 		int i = min_node;
@@ -170,6 +186,12 @@ static void renderPoints
 		window.draw(text);
 	}
 
+	string strDistance = to_string(distances[end]) + " km";
+	if (distances[end] == INT_MAX)
+	{
+		strDistance = "Can't be reached";
+	}
+
 	shape.setPosition(sf::Vector2f(points[start].x, points[start].y));
 	shape.setFillColor(sf::Color::Yellow);
 	text.setString("Start");
@@ -179,7 +201,7 @@ static void renderPoints
 
 	shape.setPosition(sf::Vector2f(points[end].x, points[end].y));
 	shape.setFillColor(sf::Color::Blue);
-	text.setString(to_string(distances[end]) + " km");
+	text.setString(strDistance);
 	text.setPosition(sf::Vector2f(points[end].x, points[end].y - R - 5));
 	window.draw(shape);
 	window.draw(text);
@@ -230,6 +252,10 @@ static void renderRedLines
 	while (from != start)
 	{
 		int to = fromTo[from];
+		if (to == -1)
+		{
+			break;
+		}
 		sf::Color color = sf::Color::Red;
 
 		renderLine(window, text, color, points, from, to);
@@ -284,6 +310,7 @@ static void renderVisualization
 	sf::Vector2f viewSize = view.getSize();
 	float powerOfZoom = 0.05f;
 	bool isPressed = false;
+	int firstNode = -1;
 
 	while (window.isOpen()) 
 	{
@@ -297,24 +324,65 @@ static void renderVisualization
 				viewSize = view.getSize();
 			}
 
+			if (event.type == sf::Event::KeyPressed
+				and event.key.scancode == sf::Keyboard::Scan::F)
+			{
+				sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+				int node = checkCollision(mousePos.x - mainAnchor.x, mousePos.y - mainAnchor.y, points);
+				if (node == -1)
+				{
+					break;
+				}
+
+				if (firstNode == -1)
+				{
+					firstNode = node;
+				}
+				else
+				{
+					makeLink(points, graph, firstNode, node);
+					distances = dijkstra(graph, fromTo, start);
+					firstNode = -1;
+				}
+			}
+
+			if (event.type == sf::Event::KeyPressed
+				and event.key.scancode == sf::Keyboard::Scan::A)
+			{
+				sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+				int node = checkCollision(mousePos.x - mainAnchor.x, mousePos.y - mainAnchor.y, points);
+				if (node != -1)
+				{
+					break;
+				}
+
+				points.push_back(sf::Vector2i(mousePos.x, mousePos.y));
+				graph.push_back(vector<pair<int, int>>(0));
+				distances.push_back(INT_MAX);
+				fromTo.push_back(-1);
+			}
+
 			if (event.type == sf::Event::MouseButtonPressed
-				and checkCollision(event.mouseButton.x - mainAnchor.x, event.mouseButton.y - mainAnchor.y, points) != -1
 				and (event.mouseButton.button == sf::Mouse::Left
 					or event.mouseButton.button == sf::Mouse::Right)
 				)
 			{
-				int x, y;
-				x = event.mouseButton.x - mainAnchor.x;
-				y = event.mouseButton.y - mainAnchor.y;
-
-				if (event.mouseButton.button == sf::Mouse::Left)
+				sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+				int node = checkCollision(mousePos.x - mainAnchor.x, mousePos.y - mainAnchor.y, points);
+				if (node == -1)
 				{
-					start = checkCollision(x, y, points);
+					break;
+				}
+
+				if (event.mouseButton.button == sf::Mouse::Left
+					and start != node)
+				{
+					start = node;
 					distances = dijkstra(graph, fromTo, start);
 				}
 				else
 				{
-					end = checkCollision(x, y, points);
+					end = node;
 				}
 			}
 
@@ -409,7 +477,7 @@ int main()
 
 	int start = 0;
 	int end = points.size() - 1;
-	vector<int> fromTo(points.size());
+	vector<int> fromTo(points.size(), -1);
 	vector<int> distances = dijkstra(graph, fromTo, start);
 
 	renderVisualization(graph, points, fromTo, distances, start, end);
