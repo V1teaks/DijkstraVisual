@@ -148,7 +148,7 @@ static vector<int> dijkstra
 		}
 
 		min_dist = INT_MAX;
-		for (int i = 0; i < graph.size(); ++i) 
+		for (int i = 0; i < graph.size(); ++i)
 		{
 			if (!used[i] && distances[i] < min_dist) 
 			{
@@ -292,8 +292,8 @@ static void renderVisualization
 	vector<int>& distances, 
 	int start, 
 	int end
-) {
-
+) 
+{
 	sf::Font font;
 	if (!font.loadFromFile("Roboto-Regular.ttf")) {
 		cout << "Font not found" << endl;
@@ -307,7 +307,6 @@ static void renderVisualization
 	sf::View view(sf::FloatRect(0, 0, WIDTH, HEIGHT));
 	sf::Vector2f mainAnchor(0, 0);
 	sf::Vector2f anchor;
-	sf::Vector2f viewSize = view.getSize();
 	float powerOfZoom = 0.05f;
 	bool isPressed = false;
 	int firstNode = -1;
@@ -321,7 +320,6 @@ static void renderVisualization
 			if (event.type == sf::Event::MouseWheelScrolled)
 			{
 				view.zoom(1.0f - powerOfZoom * event.mouseWheelScroll.delta);
-				viewSize = view.getSize();
 			}
 
 			if (event.type == sf::Event::KeyPressed
@@ -359,7 +357,7 @@ static void renderVisualization
 					break;
 				}
 
-				points.push_back(sf::Vector2i(mousePos.x, mousePos.y));
+				points.push_back(sf::Vector2i(mousePos.x - mainAnchor.x, mousePos.y - mainAnchor.y));
 				graph.push_back(vector<pair<int, int>>(0));
 				distances.push_back(INT_MAX);
 				fromTo.push_back(-1);
@@ -383,7 +381,7 @@ static void renderVisualization
 					start = node;
 					distances = dijkstra(graph, fromTo, start);
 				}
-				else
+				else if (event.mouseButton.button == sf::Mouse::Right)
 				{
 					end = node;
 				}
@@ -405,7 +403,7 @@ static void renderVisualization
 				x = event.mouseMove.x;
 				y = event.mouseMove.y;
 				
-				scale = viewSize.x / WIDTH;
+				scale = view.getSize().x / WIDTH;
 				dx = (anchor.x - x) * scale;
 				dy = (anchor.y - y) * scale;
 
